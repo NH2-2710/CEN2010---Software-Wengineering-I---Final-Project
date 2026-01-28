@@ -1,0 +1,9 @@
+from seleniumbase import BaseCase
+
+class ShopeeLoginTest(BaseCase):
+    def test_login(self):
+        self.open("https://shopee.vn/")
+        self.maximize_window()
+        self.assert_element("#main > div > div.t5pFIU > header > div.container-wrapper.header-with-search-wrapper > div > a > div > svg")
+        self.click("#main > div > div.t5pFIU > header > div.navbar-wrapper.container-wrapper > nav > ul > a:nth-child(6)")
+        self.

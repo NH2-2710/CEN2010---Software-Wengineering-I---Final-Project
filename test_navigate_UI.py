@@ -44,9 +44,9 @@ class TestNavigationUI(BaseCase):
         self.wait_for_element_visible(home_indicator, timeout=15)
         
         if self.is_element_visible(home_indicator):
-            print("Confirmed: Return to Home (Gateway) successful.")
+            print("Confirmed: Return to Home successful.")
         else:
-            self.fail("Failed to reach Home Gateway after clicking logo")
+            self.fail("Failed to reach Home after clicking logo")
         
         self.save_screenshot("TC17_back_home.png", "Test Case Screenshots")
 
@@ -118,3 +118,87 @@ class TestNavigationUI(BaseCase):
         
         self.save_screenshot("TC19_cart_page_status.png", "Test Case Screenshots")
         print("Successfully validated Shopping Cart navigation.")
+
+    def test_case_TC20(self):
+        """Verify if the user can navigate to Change Language and Currency page 
+        by clicking the box """
+
+        language_currency_change_box = 'a.icp-link-style-2'
+
+        self.wait_for_element_present(language_currency_change_box, timeout = 15)
+
+        if self.wait_for_element_visible(language_currency_change_box):
+            print("Language and currency change box is visible on the header")
+            self.js_click(language_currency_change_box)
+        else:
+            self.fail("Language and currency was not found")
+
+        
+        language_setting = "#icp-language-settings"
+        currency_setting = "#icp-currency-settings"
+
+        self.wait_for_element_visible(language_setting, timeout=15)
+        self.wait_for_element_visible(currency_setting, timeout=15)
+
+        if (self.is_element_visible(language_setting) and self.is_element_visible(currency_setting)):
+            print("Successfully reached the setting of language and currency")
+        else:
+            print("The settings for language and currency were not found after clicking")
+
+        current_url = self.get_current_url()
+        if "topnav_lang_ais" in current_url:
+            print(f"URL verified: {current_url}")
+        else:
+            self.fail(f"URL does not contain 'topnav_lang_ais'. Current URL: {current_url}")
+
+        if self.is_text_visible("Language Settings") and self.is_text_visible("Currency Settings"):
+            print("Setting for language/currency is visible")
+        else:
+            self.fail("Setting for language/currency not found")
+
+        self.save_screenshot("TC20_language_currency_setting_page_status.png", "Test Case Screenshots")
+        print("Successfully validated language/currency setting navigation.")
+
+    
+    def test_case_TC21(self):
+        """Verify if the user can expand the submenu when hover on the language/currency
+        setting flyout button"""
+
+        expand_button = 'button[aria-label*="Expand to Change Language or Country"]'
+
+        self.wait_for_element_visible(expand_button, timeout=15)
+        self.sleep(5)
+        initial_state = self.get_attribute(expand_button, "aria-expanded")
+        if initial_state == "false":
+            print("Confirmed: Button is initially collapsed (aria-expanded='false')")
+        else:
+            print(f"Warning: Unexpected initial state: {initial_state}")
+
+        self.hover_on_element(expand_button)
+        final_state = self.get_attribute(expand_button, "aria-expanded")
+
+        if final_state == "true":
+            print("Success: Button state changed to aria-expanded='true'")
+        else:
+            self.fail(f"Expansion failed! State is still: {final_state}")
+
+        if self.is_element_visible("#nav-flyout-icp"):
+            print("Language flyout menu is physically visible to the user")
+        else:
+            self.fail("Flyout state is 'true' but the menu container is hidden")
+
+        self.save_screenshot("TC21_Expanded_Verified.png", "Test Case Screenshots")
+
+
+        
+
+        
+
+        
+
+
+
+
+
+        
+

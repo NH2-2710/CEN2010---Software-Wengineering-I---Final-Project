@@ -1,8 +1,11 @@
 from seleniumbase import BaseCase
 
 class TestSearchSorting(BaseCase):
-    """These test cases test whether the website sorts the results in a specific order.
-       For example: from low to high price, from high to low price"""
+    """
+    Testing the search result sorting logic.
+    Main goal is to ensure the site actually reorders items when 
+    switching between Low-to-High and High-to-Low price filters.
+    """
 
     def setUp(self):
         super().setUp()
@@ -11,14 +14,17 @@ class TestSearchSorting(BaseCase):
         self.open("https://www.amazon.com/") 
         self.maximize_window()
         
-        # Professor's Style: Wait for specific stability instead of just a sleep(5)
+        # Don't start until the body is loaded; better than just a static sleep
         self.wait_for_element_present("body")
+        
+        # Clean up the view: close the 'Continue shopping' pop-up if it's in the way
         self.click_if_visible('button[alt="Continue shopping"]') 
         
-        # Ensure the header is loaded before starting
+        # Make sure the search bar is actually interactive before typing
         self.wait_for_element_visible('input[name="field-keywords"]', timeout=15)
 
-    def tearDown(self):        
+    def tearDown(self):         
+        # Wipe session data so tests stay independent and clean
         self.clear_local_storage()
         self.clear_session_storage()
         self.delete_all_cookies()
@@ -26,31 +32,32 @@ class TestSearchSorting(BaseCase):
         print("---- END OF TEST ----")
 
     def test_case_TC11(self):
-        """Verify sorting: Price: Low to High"""
+        """Check if sorting by 'Price: Low to High' works for a generic 'Bag' search."""
         search_bar = 'input[name="field-keywords"]'
         self.wait_for_element_visible(search_bar)
         self.type(search_bar, "Bag\n") 
 
-        # 1. Wait for results and the sorting dropdown to be ready
+        # Give the results a moment to finish rendering so the dropdown is clickable
         sorting_selector = 'span[data-action="a-dropdown-button"]'
         self.wait_for_element_visible(sorting_selector, timeout=15)
-        self.sleep(5)
+        self.sleep(5) # Manual buffer for the dynamic sorting element to settle
         
-        # 2. Click dropdown and select "Price: Low to High"
+        # Open the sort menu
         self.click(sorting_selector)
         self.sleep(3)
-        # Professor's Style: Using a specific wait for the dropdown item
+        
+        # Target 'Low to High' specifically; using partial data-value match for stability
         low_to_high = 'a[data-value*="price-asc-rank"]'
         self.wait_for_element_visible(low_to_high)
-        self.js_click(low_to_high) # js_click is more reliable for Amazon dropdowns
+        
+        # js_click is safer here because Amazon's dropdown overlays can be tricky for Selenium
+        self.js_click(low_to_high) 
 
-        # 3. Wait for the page to refresh with sorted results
-        # We look for the "Price: Low to High" text to appear on the button label
+        # Verification: check if the dropdown label actually updated to show the new sort order
         self.wait_for_text("Price: Low to High", sorting_selector, timeout=10)
         self.save_screenshot("TC11_LowToHigh_Start.png", "Test Case Screenshots")
         
-        # 4. Professor's Style: Systematic Scrolling
-        # This triggers lazy-loading and ensures screenshots capture product data
+        # Scroll down in chunks to trigger lazy-loading for a better screenshot of the items
         for x in range(0, 2000, 500):
             self.execute_script(f"window.scrollTo(0, {x});")
             self.sleep(0.5)
@@ -59,7 +66,7 @@ class TestSearchSorting(BaseCase):
         print("Successfully validated 'Price: Low to High' sorting.")
 
     def test_case_TC12(self):
-        """Verify sorting: Price: High to Low"""
+        """Check if sorting by 'Price: High to Low' works for a generic 'Bag' search."""
         search_bar = 'input[name="field-keywords"]'
         self.wait_for_element_visible(search_bar)
         self.type(search_bar, "Bag\n") 
@@ -68,18 +75,20 @@ class TestSearchSorting(BaseCase):
         self.wait_for_element_visible(sorting_selector, timeout=15)
         self.sleep(5)
 
-        # 1. Click dropdown and select "Price: High to Low"
+        # Trigger the dropdown
         self.click(sorting_selector)
         self.sleep(5)
+        
+        # Switch to 'High to Low'
         high_to_low = 'a[data-value*="price-desc-rank"]'
         self.wait_for_element_visible(high_to_low)
         self.js_click(high_to_low)
 
-        # 2. Verify the dropdown label updated
+        # Confirm the label change
         self.wait_for_text("Price: High to Low", sorting_selector, timeout=10)
         self.save_screenshot("TC12_HighToLow_Start.png", "Test Case Screenshots")
         
-        # 3. Defensive Scrolling
+        # Defensive scrolling to make sure we load the higher-priced results correctly
         for x in range(0, 2000, 500):
             self.execute_script(f"window.scrollTo(0, {x});")
             self.sleep(0.5)

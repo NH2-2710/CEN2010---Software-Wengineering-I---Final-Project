@@ -1,8 +1,11 @@
 from seleniumbase import BaseCase
 
 class TestSearchFilter(BaseCase):
-    """These test cases verify whether the website returns the result of products
-        satisfying the criteria mentioned in the filters."""
+    """
+    Tests for the search sidebar filters.
+    Checking if we can stack multiple criteria (color, size, gender)
+    and if the 'Clear' functionality actually resets the results.
+    """
 
     def setUp(self):
         super().setUp()
@@ -10,14 +13,17 @@ class TestSearchFilter(BaseCase):
         self.open("https://www.amazon.com/") 
         self.maximize_window()
         
-        # Stability: Wait for body and handle potential pop-ups
+        # Standard check to ensure we aren't looking at a blank white page
         self.wait_for_element_present("body")
+        
+        # Get rid of that annoying 'Continue shopping' overlay if it pops up
         self.click_if_visible('button[alt="Continue shopping"]') 
         
-        # Wait for search bar to ensure navigation is ready
+        # Make sure the search bar is actually there before we try to type
         self.wait_for_element_visible('input[name="field-keywords"]', timeout=15)
 
-    def tearDown(self):        
+    def tearDown(self):         
+        # Housekeeping: wipe the session so the next test doesn't inherit weird states
         self.clear_local_storage()
         self.clear_session_storage()
         self.delete_all_cookies()
@@ -25,81 +31,78 @@ class TestSearchFilter(BaseCase):
         print("---- END OF TEST ----")
 
     def test_case_TC09(self):
-        """Verify multi-filter application: Unisex, Black Color, and Size M"""
+        """Verify we can apply Unisex, Black, and Size M filters all at once."""
         
-        # 1. Search for 'clothes'
+        # Kick off with a broad search for clothes
         search_bar = 'input[name="field-keywords"]'
         self.wait_for_element_visible(search_bar)
         self.type(search_bar, "clothes\n") 
 
-        # Professor's Strategy: Define a list of static selectors
-        # This makes the code cleaner and easier to extend for more filters
+        # I'm putting these in a list so I can loop through them easily.
+        # This keeps the main logic from being repetitive.
         filters = [
             'a[aria-label="Apply Unisex filter to narrow results"]',
             'a[aria-label="Apply Black filter to narrow results"]',
             'button[value="M"]'
         ]
 
-        # 2. Iterate through filters with high-stability logic
+        # Loop through each filter and click 'em one by one
         for i, filter_selector in enumerate(filters, 1):
-            # Wait for the specific filter to appear in the DOM after the previous refresh
+            # Need to wait for the page to refresh and the next filter to be clickable
             self.wait_for_element_visible(filter_selector, timeout=15)
             
-            # Professional 'Nudge': Scroll and move slightly up to avoid fixed headers
+            # Use a little nudge: scroll to the element but move up a bit
+            # so the sticky Amazon header doesn't cover the button.
             self.scroll_to_element(filter_selector)
             self.execute_script("window.scrollBy(0, -150);") 
             
-            # JavaScript Click: Ensures the click registers even if a loading overlay exists
+            # Using JS click here as a safety net in case of loading overlays
             self.js_click(filter_selector)
             
-            # Descriptive Screenshot for each filter state
+            # Take a shot after each click so I can track the progress in the logs
             self.save_screenshot(f"TC09_0{i}_Filter_Applied.png", "Test Case Screenshots")
             
-            # Smart Wait: Wait for the AJAX 'spinning' or loading to settle
+            # Give the AJAX results a second to settle before the next loop
             self.wait_for_element_present("body")
             self.sleep(2) 
 
-        # 3. Final Verification
-        # Ensure the results container is visible after all filters are active
+        # Final check: make sure we actually see products in the results area
         self.wait_for_element_visible('div[data-component-type="s-search-result"]', timeout=10)
         
         self.save_screenshot("TC09_04_Final_Filtered_Results.png", "Test Case Screenshots")
         print("Successfully validated multi-filter application for clothes.")
 
     def test_case_TC10(self):
-        """Verify that a user can successfully clear all applied filters"""
+        """Make sure the 'Clear' link actually appears and resets the search."""
         
-        # 1. Search for 'clothes'
+        # Start with the same base search
         search_bar = 'input[name="field-keywords"]'
         self.wait_for_element_visible(search_bar)
         self.type(search_bar, "clothes\n") 
 
-        # 2. Apply a filter to make the "Clear" option appear
-        # We use the same selector that we know works from TC09
+        # Apply a quick filter just to trigger the 'Clear' option in the UI
         unisex_filter = 'a[aria-label="Apply Unisex filter to narrow results"]'
         self.wait_for_element_visible(unisex_filter, timeout=10)
         self.js_click(unisex_filter)
         
-        # Professional Wait: Ensure the page refreshes before looking for "Clear"
+        # Wait for the page to update
         self.wait_for_element_present("body")
         self.save_screenshot("TC10_01_Filter_Applied.png", "Test Case Screenshots")
         
-        # 3. Locate and click the "Clear" link
-        # Professor's Tip: Use a specific selector for the "Clear" link in the filter sidebar
+        # Now look for that 'Clear' link in the sidebar
         clear_link = 'a:contains("Clear")'
         
         if self.is_element_visible(clear_link):
             self.wait_for_element_visible(clear_link, timeout=10)
             self.js_click(clear_link)
             
-            # 4. Final Verification: Ensure the "Clear" button is gone after clicking
-            # This proves the filters were actually reset
+            # If clicking 'Clear' worked, the link itself should disappear
             self.wait_for_element_not_visible(clear_link, timeout=10)
             print("Successfully cleared applied filters.")
         else:
-            # If the link isn't there, we take a debug screenshot
+            # Troubleshooting step: if 'Clear' didn't show up, something went wrong
             self.save_screenshot("TC10_Error_Clear_Not_Found.png", "Test Case Screenshots")
             self.fail("Clear link was not found after applying filter.")
 
-        # Final state check
+        # Final check of the clean state
         self.save_screenshot("TC10_02_Filters_Cleared_Final.png", "Test Case Screenshots")
